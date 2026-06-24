@@ -14,22 +14,33 @@ export interface NotesData {
     [category: string]: Note[] | string | number;
 }
 
+const emptyNotesData: NotesData = {
+    lastUpdated: "",
+    count: 0,
+};
+
 export async function fetchNotes(): Promise<NotesData> {
-    const response = await fetch(
-        "https://raw.githubusercontent.com/iam-robin/obsidian-personal-website-data/main/output/digital-garden.json",
-        {
-            headers: {
-                Authorization: `token ${import.meta.env.GITHUB_TOKEN}`,
-                Accept: "application/vnd.github.v3.raw",
-            },
+    try {
+        const response = await fetch(
+            "https://raw.githubusercontent.com/iam-robin/obsidian-personal-website-data/main/output/digital-garden.json",
+            {
+                headers: {
+                    Authorization: `token ${import.meta.env.GITHUB_TOKEN}`,
+                    Accept: "application/vnd.github.v3.raw",
+                },
+            }
+        );
+
+        if (!response.ok) {
+            console.warn(`Skipped remote notes: ${response.statusText}`);
+            return emptyNotesData;
         }
-    );
 
-    if (!response.ok) {
-        throw new Error(`Failed to fetch notes: ${response.statusText}`);
+        return response.json();
+    } catch (error) {
+        console.warn("Skipped remote notes:", error);
+        return emptyNotesData;
     }
-
-    return response.json();
 }
 
 export function getAllNotes(data: NotesData): Note[] {

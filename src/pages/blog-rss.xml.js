@@ -1,7 +1,13 @@
 import rss from "@astrojs/rss";
 import { getCollection } from "astro:content";
 import { marked } from "marked";
-import DOMPurify from "isomorphic-dompurify";
+
+function sanitizeHtml(html) {
+    return html
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/\son\w+="[^"]*"/gi, "")
+        .replace(/\son\w+='[^']*'/gi, "");
+}
 
 export async function GET(context) {
     const blogPosts = await getCollection("blog");
@@ -23,7 +29,7 @@ export async function GET(context) {
         items: await Promise.all(
             sortedPosts.map(async (post) => {
                 const rawHtml = await marked(post.body);
-                const htmlContent = DOMPurify.sanitize(rawHtml);
+                const htmlContent = sanitizeHtml(rawHtml);
 
                 return {
                     title: post.data.title,

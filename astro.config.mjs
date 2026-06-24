@@ -11,9 +11,12 @@ import sitemap from "@astrojs/sitemap";
 // https://astro.build/config
 export default defineConfig({
     site: "https://iamrob.in",
+    devToolbar: {
+        enabled: false,
+    },
     integrations: [
         icon(),
-        db(),
+        ...(process.env.ENABLE_ASTRO_DB === "true" ? [db()] : []),
         sitemap({
             filter: (page) =>
                 !page.includes("/postcards/error") &&
@@ -26,6 +29,14 @@ export default defineConfig({
 
     vite: {
         plugins: [tailwindcss()],
+        optimizeDeps: {
+            noDiscovery: true,
+            include: [],
+            exclude: ["aria-query", "axobject-query"],
+        },
+        ssr: {
+            external: ["aria-query", "axobject-query"],
+        },
         resolve: {
             alias: {
                 "@components": fileURLToPath(
@@ -42,6 +53,18 @@ export default defineConfig({
                 ),
                 "@api": fileURLToPath(new URL("./src/api", import.meta.url)),
                 "@data": fileURLToPath(new URL("./src/data", import.meta.url)),
+                "aria-query": fileURLToPath(
+                    new URL(
+                        "./src/utils/dev-toolbar-stubs/aria-query.js",
+                        import.meta.url,
+                    ),
+                ),
+                "axobject-query": fileURLToPath(
+                    new URL(
+                        "./src/utils/dev-toolbar-stubs/axobject-query.js",
+                        import.meta.url,
+                    ),
+                ),
             },
         },
     },

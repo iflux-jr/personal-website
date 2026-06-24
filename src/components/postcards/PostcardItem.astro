@@ -1,6 +1,4 @@
 ---
-import DOMPurify from "isomorphic-dompurify";
-
 interface Props {
     author: string;
     body: string;
@@ -65,7 +63,10 @@ const {
     wavyStampRotation = Math.floor(Math.random() * 21) - 10,
 } = Astro.props;
 
-const sanitizedStampSvg = DOMPurify.sanitize(stampSvg);
+const sanitizedStampSvg = stampSvg
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/\son\w+="[^"]*"/gi, "")
+    .replace(/\son\w+='[^']*'/gi, "");
 
 const fontSize = `${fontSizeFactor * 1.2}em`; // 20% larger
 const lineHeightValue = lineHeight.toFixed(2);

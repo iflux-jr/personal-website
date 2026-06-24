@@ -1,8 +1,12 @@
 ---
-import { db, Postcard, eq, and, gt } from "astro:db";
 import Layout from "@layouts/Layout.astro";
 import Button from "@components/Button.astro";
 import { sendPostcardNotification } from "@utils/email";
+import {
+    hasRecentDuplicatePostcard,
+    insertPostcard,
+    isAstroDbEnabled,
+} from "@utils/postcardsDb";
 
 export const prerender = false;
 
@@ -30,6 +34,10 @@ const paperColors = [
 // Process form submission
 if (Astro.request.method === "POST") {
     try {
+        if (!isAstroDbEnabled) {
+            return Astro.redirect("/postcards/error");
+        }
+
         const formData = await Astro.request.formData();
         const author = formData?.get("author");
         const body = formData?.get("body");
@@ -86,22 +94,18 @@ if (Astro.request.method === "POST") {
         if (typeof author === "string" && typeof body === "string") {
             // Deduplicate: skip if identical postcard was submitted in the last 5 minutes
             const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-            const existing = await db
-                .select({ id: Postcard.id })
-                .from(Postcard)
-                .where(
-                    and(
-                        eq(Postcard.author, author),
-                        eq(Postcard.body, body),
-                        gt(Postcard.date, fiveMinutesAgo),
-                    ),
-                );
 
-            if (existing.length > 0) {
+            if (
+                await hasRecentDuplicatePostcard(
+                    author,
+                    body,
+                    fiveMinutesAgo,
+                )
+            ) {
                 return Astro.redirect("/postcards/success");
             }
 
-            await db.insert(Postcard).values({
+            await insertPostcard({
                 author,
                 body,
                 date,

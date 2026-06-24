@@ -1,10 +1,10 @@
 ---
-import { db, Postcard, desc, eq } from "astro:db";
 import {
     isValidCountry,
     getStandardCountryName,
     getCountryFlag,
 } from "@utils/countries";
+import { getPublishedPostcards } from "@utils/postcardsDb";
 import PostcardsSection from "./PostcardsSection.astro";
 import WorldMapDetail from "./WorldMapDetail.astro";
 import Layout from "@layouts/Layout.astro";
@@ -22,12 +22,9 @@ interface Props {
 
 const { selectedCountry } = Astro.props;
 
-// Fetch all postcards
-const allPostcards = await db
-    .select()
-    .from(Postcard)
-    .where(eq(Postcard.isPublished, true))
-    .orderBy(desc(Postcard.date));
+// Fetch all postcards. Local Windows builds run without Astro DB by default,
+// so this returns an empty list unless ENABLE_ASTRO_DB=true is set.
+const allPostcards = await getPublishedPostcards();
 
 // Filter postcards based on selectedCountry
 const displayedPostcards = selectedCountry

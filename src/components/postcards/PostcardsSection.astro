@@ -1,13 +1,16 @@
 ---
-import { db, Postcard, desc, eq } from "astro:db";
 import { Icon } from "astro-icon/components";
 import PostcardsCarousel from "./PostcardsCarousel.astro";
 import Container from "../Container.astro";
 import HeadlineParagraphSection from "@components/HeadlineParagraphSection.astro";
+import {
+    getPublishedPostcards,
+    type PostcardRecord,
+} from "@utils/postcardsDb";
 
 export interface Props {
     limit?: number | null;
-    postcards?: (typeof Postcard.$inferSelect)[];
+    postcards?: PostcardRecord[];
     hasDescription?: boolean;
 }
 
@@ -19,14 +22,9 @@ let recentPostcards;
 if (postcards) {
     recentPostcards = limit ? postcards.slice(0, limit) : postcards;
 } else {
-    // Otherwise, fetch from database (backward compatibility)
-    let query = db
-        .select()
-        .from(Postcard)
-        .where(eq(Postcard.isPublished, true))
-        .orderBy(desc(Postcard.date));
-
-    recentPostcards = limit ? await query.limit(limit) : await query;
+    // Otherwise, fetch from database when enabled, or use an empty local fallback.
+    const allPostcards = await getPublishedPostcards();
+    recentPostcards = limit ? allPostcards.slice(0, limit) : allPostcards;
 }
 
 const headline = "Postcards";
